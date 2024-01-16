@@ -5,6 +5,7 @@ import time
 import pygame
 
 from button import Button
+from const import WIDTH, HEIGHT
 
 MUSIC = {
     1: "8-bit",
@@ -17,20 +18,34 @@ MUSIC = {
 
 
 def myFunction():
-    sound1.play()
     print('Button Pressed')
 
 
 def show_menu():
     global background, buttons, texts
     background = pygame.image.load("assets/menu_screen.png")
-    background = pygame.transform.scale(background, (width, height))
+    background = pygame.transform.scale(background, (WIDTH, HEIGHT))
     buttons = []
     texts = []
     Button(194, 352, 888, 77, font, buttons, screen, 'Fast reaction', myFunction)
-    Button(194, 450, 888, 77, font, buttons, screen, 'Collect order', myFunction)
+    Button(194, 450, 888, 77, font, buttons, screen, 'Collect order', show_collect_order)
     Button(194, 548, 888, 77, font, buttons, screen, 'Choose right', myFunction)
     Button(194, 647, 888, 77, font, buttons, screen, 'Settings', show_settings)
+
+
+def show_collect_order():
+    global background, buttons, texts
+    background = pygame.image.load("assets/collect_order_screen.png")
+    background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+    buttons = []
+    texts = []
+
+    black = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA, 32)
+    black.fill((131, 205, 235, 150))
+        # black.convert_alpha()
+        # black = pygame.Rect(0, 0, WIDTH, HEIGHT)
+    texts.append((black, (0, 0)))
+    Button(0, 0, 967, 91, font, buttons, screen, 'Menu', show_menu)
 
 
 def show_settings():
@@ -49,7 +64,7 @@ def show_settings():
         load_music()
         buttons.pop()
         Button(460, 428, 495, 90, font, buttons, screen, f'Turn {mode}', turn_mode, True)
-        time.sleep(0.1)
+        time.sleep(0.15)
 
     def music_down():
         with open('data/music.txt', 'r') as f:
@@ -76,9 +91,14 @@ def show_settings():
         load_music()
 
     global background, buttons, texts
-    sound1.play()
+
+    with open('data/sounds.txt', 'r') as f:
+        mode = f.read()
+    if mode == 'on':
+        sound1.play()
+
     background = pygame.image.load("assets/settings_screen.png")
-    background = pygame.transform.scale(background, (width, height))
+    background = pygame.transform.scale(background, (WIDTH, HEIGHT))
     buttons = []
     texts = []
 
@@ -120,10 +140,7 @@ def load_music():
 
 pygame.init()
 
-width = 1440
-height = 780
-
-screen = pygame.display.set_mode((width, height))
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 background = pygame.image.load("assets/menu_screen.png")
 buttons = []
@@ -140,7 +157,7 @@ clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 
 # class Parca(pygame.sprite.Sprite):
-#     def __init__(self, x=width / 2, y=height / 2):
+#     def __init__(self, x=WIDTH / 2, y=HEIGHT / 2):
 #         super().__init__()
 #
 #         self.image = pygame.image.load("ball.png").convert()
@@ -152,14 +169,14 @@ all_sprites = pygame.sprite.Group()
 #     def update(self, *args):
 #         up, down, right, left = args
 #
-#         if self.rect.x > width:
+#         if self.rect.x > WIDTH:
 #             self.rect.x = 0
 #         if self.rect.x < 0:
-#             self.rect.x = width
-#         if self.rect.y > height:
+#             self.rect.x = WIDTH
+#         if self.rect.y > HEIGHT:
 #             self.rect.y = 0
 #         if self.rect.y < 0:
-#             self.rect.y = height
+#             self.rect.y = HEIGHT
 #
 #         if right:
 #             self.rect.x += 10
@@ -184,13 +201,14 @@ while True:
     #     up, down, right, left = keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_RIGHT], keys[pygame.K_LEFT]
     #     all_sprites.update(up, down, right, left)
 
+
     screen.blit(background, (0, 0))
     all_sprites.draw(screen)
 
-    for object in buttons:
-        object.process()
-
     for text in texts:
         screen.blit(text[0], text[1])
+
+    for object in buttons:
+        object.process()
 
     pygame.display.update()

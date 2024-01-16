@@ -43,7 +43,7 @@ class Button():
             else:
                 self.alreadyPressed = False
         self.buttonSurface.blit(self.buttonSurf, [
-            self.buttonRect.width / 2 - self.buttonSurf.get_rect().width / 2,
-            self.buttonRect.height / 2 - self.buttonSurf.get_rect().height / 2
+            self.buttonRect.width / 2 - self.buttonSurf.get_rect().WIDTH / 2,
+            self.buttonRect.height / 2 - self.buttonSurf.get_rect().HEIGHT / 2
         ])
         self.screen.blit(self.buttonSurface, self.buttonRect)
