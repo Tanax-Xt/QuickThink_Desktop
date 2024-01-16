@@ -1,7 +1,7 @@
 import pygame
 
 
-# from main import font, objects, screen
+# from main import font, buttons, screen
 
 
 class Button():
