@@ -1,9 +1,6 @@
 import pygame
 
 
-# from main import font, buttons, screen
-
-
 class Button():
     def __init__(self, x, y, width, height, font, objects, screen, buttonText='Button', onclickFunction=None,
                  onePress=False):
@@ -28,7 +25,7 @@ class Button():
         self.buttonSurf = font.render(buttonText, True, '#00BFFF')
         objects.append(self)
 
-    def process(self):
+    def update(self):
         mousePos = pygame.mouse.get_pos()
         self.buttonSurface.fill(self.fillColors['normal'])
         if self.buttonRect.collidepoint(mousePos):
@@ -43,7 +40,7 @@ class Button():
             else:
                 self.alreadyPressed = False
         self.buttonSurface.blit(self.buttonSurf, [
-            self.buttonRect.width / 2 - self.buttonSurf.get_rect().WIDTH / 2,
-            self.buttonRect.height / 2 - self.buttonSurf.get_rect().HEIGHT / 2
+            self.buttonRect.width / 2 - self.buttonSurf.get_rect().width / 2,
+            self.buttonRect.height / 2 - self.buttonSurf.get_rect().height / 2
         ])
         self.screen.blit(self.buttonSurface, self.buttonRect)
