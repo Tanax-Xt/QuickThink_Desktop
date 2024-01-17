@@ -54,7 +54,6 @@ def show_menu():
     COLLECT_ORDER = 0
     CHOOSE_RIGHT = 0
     background = pygame.image.load("assets/screens/menu_screen.png")
-    background = pygame.transform.scale(background, (WIDTH, HEIGHT))
     buttons = []
     texts = []
     Button(194, 352, 888, 77, font, buttons, screen, 'Fast reaction', myFunction)
@@ -115,13 +114,10 @@ def game_collect_order():
     show = 0
     screen.blit(background, (0, 0))
     pygame.display.update()
-    while COLLECT_ORDER:
+    while COLLECT_ORDER not in [0, 2]:
         clock.tick(60)
         for event in pygame.event.get():
             if event.type == pygame.QUIT: sys.exit()
-
-        for object in buttons:
-            object.update()
 
         if show < 6:
             screen.blit(background, (0, 0))
@@ -129,7 +125,7 @@ def game_collect_order():
             cards.sprites()[show].show = True
             show += 1
             if show > 0:
-                pygame.display.update()
+                # pygame.display.update()
                 time.sleep(0.8)
         elif show == 6:
             screen.blit(background, (0, 0))
@@ -139,13 +135,18 @@ def game_collect_order():
             for i, j in enumerate(sample(range(6), 6)):
                 cards.sprites()[i].coords = (140 + 478.5 * (j % 3), 108 + 240 * (j // 3))
             cards.update()
-            pygame.display.update()
+            # pygame.display.update()
         else:
             screen.blit(background, (0, 0))
             cards.update()
-            pygame.display.update()
 
-    finish_screen('collect_order', 60 - 10 * len(order))
+        for object in buttons:
+            object.update()
+
+        pygame.display.update()
+
+    if COLLECT_ORDER == 2:
+        finish_screen('collect_order', 60 - 10 * len(order))
     # im = pygame.image.load("ball.png").convert()
     # screen.blit(im, (500, 500))
     # screen.blit(background, (0, 0))
@@ -159,9 +160,10 @@ def check_collect_order(num):
         order.pop(0)
         cards.remove(cards.sprites()[0])
         if len(order) == 0:
-            COLLECT_ORDER = 0
+            COLLECT_ORDER = 2
     else:
-        COLLECT_ORDER = 0
+        COLLECT_ORDER = 2
+
 
 
 def show_settings():
