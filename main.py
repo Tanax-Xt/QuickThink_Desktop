@@ -1,12 +1,15 @@
 import os.path
 import sys
 import time
-from random import shuffle, sample, randint
+from random import randint
+from random import sample
+from random import shuffle
 
 import pygame
 
 from button import Button
-from const import WIDTH, HEIGHT
+from const import HEIGHT
+from const import WIDTH
 from database import DataBase
 
 MUSIC = {
@@ -23,11 +26,26 @@ COLLECT_ORDER = 0
 CHOOSE_RIGHT = 0
 
 
+def load_image(path):
+    if not os.path.isfile(path):
+        print(f"Файл с изображением '{path}' не найден")
+        sys.exit()
+    image = pygame.image.load(path)
+    return image
+
+def load_font(path, kegle):
+    if not os.path.isfile(path):
+        print(f"Файл со шрифтом '{path}' не найден")
+        sys.exit()
+    font = pygame.font.Font(path, kegle)
+    return font
+
+
 class Card(pygame.sprite.Sprite):
     def __init__(self, num):
         super().__init__()
         self.num = num
-        self.im = pygame.image.load(f'assets/collect_order_cards/image{num}.png')
+        self.im = load_image(f'assets/collect_order_cards/image{num}.png')
         self.coords = (WIDTH / 2 - self.im.get_rect().width / 2, HEIGHT / 2 - self.im.get_rect().height / 2)
         self.show = False
         self.pressed = False
@@ -89,44 +107,80 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
 
 class Apple(pygame.sprite.Sprite):
-    image = pygame.image.load('assets/fast_reaction_cards/apple.png')
+    image = load_image('assets/fast_reaction_cards/apple.png')
 
     def __init__(self, coef):
         super().__init__()
-        # self.x = coef * 220 + 100
-        # self.y = randint(90, 200)
         self.direction = 1
         self.image = Apple.image
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
-        self.rect.x = coef * 350 + 150
+        self.rect.x = coef * 373 + 153
         self.rect.y = randint(101, 200)
 
-    def update(self, capibara):
-        if not pygame.sprite.collide_mask(self, capibara):
+    def update(self, character, game):
+        if not pygame.sprite.collide_mask(self, character):
             self.rect.y -= (-2) * self.direction
             screen.blit(self.image, self.rect)
-            # print(capibara.rect, self.rect)
-            # print(self.rect)
-            if self.rect.y < 100:
-                self.direction *= -1.1
-                capibara.speed *= 1.02
+            if game == 'fast_reaction':
+                if self.rect.y < 100:
+                    self.direction *= -1.1
+                    character.speed *= 1.02
 
             if self.rect.y > 670:
-                global FAST_REACTION
-                FAST_REACTION = 2
+                if game == 'fast_reaction':
+                    global FAST_REACTION
+                    FAST_REACTION = 2
+                else:
+                    global CHOOSE_RIGHT
+                    CHOOSE_RIGHT = 2
 
         else:
-            global counter_game1
-            counter_game1 += 1
-            self.rect.y -= 50
-            self.direction *= -1.1
-            capibara.speed *= 1.02
+            if game == 'fast_reaction':
+                global counter_game1
+                counter_game1 += 1
+                self.rect.y -= 50
+                self.direction *= -1.1
+                character.speed *= 1.02
+
+            else:
+                global counter_game2
+                counter_game2 += 1
+                self.rect.x += 120
+                if self.rect.x > HEIGHT:
+                    self.rect.x -= HEIGHT
+                    self.rect.x += 110
+                self.rect.y = min(70, self.rect.y - 550)
+                self.direction *= 1.1
+                character.speed *= 1.02
             screen.blit(self.image, self.rect)
 
 
-def myFunction():
-    print('Button Pressed')
+class Ball(pygame.sprite.Sprite):
+    image = load_image('assets/choose_right/ball.png')
+
+    def __init__(self, coef):
+        super().__init__()
+        self.direction = 1
+        self.image = Ball.image
+        self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect.x = coef * 358 + 312
+        self.rect.y = randint(101, 200)
+
+    def update(self, character):
+        if not pygame.sprite.collide_mask(self, character):
+            self.rect.y -= (-2.5) * self.direction
+            screen.blit(self.image, self.rect)
+
+            if self.rect.y > 670:
+                self.rect.y = min(70, self.rect.y - 550)
+                self.direction *= 1.1
+        else:
+            global CHOOSE_RIGHT
+            CHOOSE_RIGHT = 2
+
+        screen.blit(self.image, self.rect)
 
 
 def show_menu():
@@ -134,12 +188,13 @@ def show_menu():
     FAST_REACTION = 0
     COLLECT_ORDER = 0
     CHOOSE_RIGHT = 0
-    background = pygame.image.load("assets/screens/menu_screen.png")
+    background = load_image("assets/screens/menu_screen.png")
     buttons = []
     texts = []
+
     Button(194, 352, 888, 77, font, buttons, screen, 'Fast reaction', show_fast_reaction)
     Button(194, 450, 888, 77, font, buttons, screen, 'Collect order', show_collect_order)
-    Button(194, 548, 888, 77, font, buttons, screen, 'Choose right', myFunction)
+    Button(194, 548, 888, 77, font, buttons, screen, 'Choose right', show_choose_right)
     Button(194, 647, 888, 77, font, buttons, screen, 'Settings', show_settings)
 
 
@@ -149,10 +204,12 @@ def start_screen(text):
     texts.append((black, (0, 0)))
 
     screen_text = ru_font.render(text, True, '#ffffff')
-    texts.append(
-        (screen_text, (WIDTH / 2 - screen_text.get_rect().width / 2, HEIGHT / 2 - screen_text.get_rect().height / 2)))
+    coords_screen_text = (WIDTH / 2 - screen_text.get_rect().width / 2, HEIGHT / 2 - screen_text.get_rect().height / 2)
+    texts.append((screen_text, coords_screen_text))
+
     instruction = ru_font.render('Нажми ПРОБЕЛ, чтобы начать!', True, '#ffffff')
-    texts.append((instruction, (WIDTH / 2 - instruction.get_rect().width / 2, 550)))
+    coords_instruction = (WIDTH / 2 - instruction.get_rect().width / 2, 550)
+    texts.append((instruction, coords_instruction))
 
 
 def finish_screen(game, score):
@@ -163,18 +220,22 @@ def finish_screen(game, score):
     database.add_result(game, score)
 
     instruction = font.render('Game over!', True, '#ffffff')
-    texts.append((instruction, (WIDTH / 2 - instruction.get_rect().width / 2, 120)))
+    coords_instruction = (WIDTH / 2 - instruction.get_rect().width / 2, 120)
+    texts.append((instruction, coords_instruction))
 
     results = ru_font.render('Предыдущие результаты:', True, '#ffffff')
-    texts.append((results, (WIDTH / 2 - results.get_rect().width / 2, 250)))
+    coords_results = (WIDTH / 2 - results.get_rect().width / 2, 250)
+    texts.append((results, coords_results))
+
     for j, i in enumerate(database.get_result(game)):
         results_i = ru_font.render(f'{j + 1}. {i[2]} – {i[1]} очков', True, '#ffffff')
-        texts.append((results_i, (WIDTH / 2 - results_i.get_rect().width / 2, 320 + 70 * j)))
+        coords_text = (WIDTH / 2 - results_i.get_rect().width / 2, 320 + 70 * j)
+        texts.append((results_i, coords_text))
 
 
 def show_fast_reaction():
     global background, buttons, texts, FAST_REACTION
-    background = pygame.image.load("assets/screens/fast_reaction.png")
+    background = load_image("assets/screens/fast_reaction_screen.png")
     background = pygame.transform.scale(background, (WIDTH, HEIGHT))
     buttons = []
     texts = []
@@ -192,7 +253,7 @@ def game_fast_reaction():
     for i in range(4):
         apples.add(Apple(i))
 
-    im = pygame.image.load('assets/fast_reaction_cards/CapybaraAnimation.png')
+    im = load_image('assets/fast_reaction_cards/CapybaraAnimation.png')
     capibara = AnimatedSprite(pygame.transform.scale(im, (1533, 165)), 8, 1, 500, 533)
     while FAST_REACTION not in [0, 2]:
         keys = pygame.key.get_pressed()
@@ -207,20 +268,20 @@ def game_fast_reaction():
             capibara.update(right, left)
 
         capibara.update()
-        apples.update(capibara)
+        apples.update(capibara, 'fast_reaction')
 
         for object in buttons:
             object.update()
 
         pygame.display.update()
 
-    if FAST_REACTION == 2:
-        finish_screen('fast_reaction', counter_game1 * 5)
+    if CHOOSE_RIGHT == 2:
+        finish_screen('choose_right', counter_game1 * 5)
 
 
 def show_collect_order():
     global background, buttons, texts, COLLECT_ORDER
-    background = pygame.image.load("assets/screens/collect_order_screen.png")
+    background = load_image("assets/screens/collect_order_screen.png")
     background = pygame.transform.scale(background, (WIDTH, HEIGHT))
     buttons = []
     texts = []
@@ -272,6 +333,58 @@ def game_collect_order():
 
     if COLLECT_ORDER == 2:
         finish_screen('collect_order', 60 - 10 * len(order))
+
+
+def show_choose_right():
+    global background, buttons, texts, CHOOSE_RIGHT
+    background = load_image("assets/screens/choose_right_screen.png")
+    background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+    buttons = []
+    texts = []
+    CHOOSE_RIGHT = -1
+    start_screen('Лови только яблочки! Управление стрелочками')
+
+
+def game_choose_right():
+    global texts, counter_game2
+    texts = []
+    Button(0, 0, 967, 91, font, buttons, screen, 'Menu', show_menu)
+    counter_game2 = 0
+    apples = pygame.sprite.Group()
+    balls = pygame.sprite.Group()
+
+    for i in range(4):
+        apples.add(Apple(i))
+
+    for i in range(3):
+        balls.add(Ball(i))
+
+    im = load_image('assets/choose_right/goose.png')
+    duck = AnimatedSprite(pygame.transform.scale(im, (1024, 256)), 4, 1, 500, 480)
+
+    while CHOOSE_RIGHT not in [0, 2]:
+        keys = pygame.key.get_pressed()
+        clock.tick(25)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: sys.exit()
+
+        screen.blit(background, (0, 0))
+
+        if keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]:
+            right, left = keys[pygame.K_RIGHT], keys[pygame.K_LEFT]
+            duck.update(right, left)
+
+        duck.update()
+        apples.update(duck, 'choose_right')
+        balls.update(duck)
+
+        for object in buttons:
+            object.update()
+
+        pygame.display.update()
+
+    if CHOOSE_RIGHT == 2:
+        finish_screen('choose_right', counter_game2 * 10)
 
 
 def check_collect_order(num):
@@ -335,7 +448,7 @@ def show_settings():
     if mode == 'on':
         sound1.play()
 
-    background = pygame.image.load("assets/screens/settings_screen.png")
+    background = load_image("assets/screens/settings_screen.png")
     background = pygame.transform.scale(background, (WIDTH, HEIGHT))
     buttons = []
     texts = []
@@ -380,7 +493,7 @@ pygame.init()
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
-background = pygame.image.load("assets/screens/menu_screen.png")
+background = load_image("assets/screens/menu_screen.png")
 buttons = []
 texts = []
 
@@ -388,10 +501,11 @@ order = []
 cards = pygame.sprite.Group()
 
 counter_game1 = 0
+counter_game2 = 0
 
 sound1 = pygame.mixer.Sound('assets/audio/sounds/MenuButtons.mp3')
-font = pygame.font.Font('assets/fonts/Kodchasan-SemiBold.ttf', 55)
-ru_font = pygame.font.Font('assets/fonts/ISOCPEUR.ttf', 55)
+font = load_font('assets/fonts/Kodchasan-SemiBold.ttf', 55)
+ru_font = load_font('assets/fonts/ISOCPEUR.ttf', 55)
 database = DataBase('data/data.sqlite3')
 
 show_menu()
@@ -407,7 +521,6 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT: sys.exit()
 
-    # Start screen
     if -1 in [FAST_REACTION, COLLECT_ORDER, CHOOSE_RIGHT]:
         while not keys[pygame.K_SPACE]:
             keys = pygame.key.get_pressed()
@@ -415,19 +528,19 @@ while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: sys.exit()
             screen.blit(background, (0, 0))
-            # all_sprites.draw(screen)
 
             for text in texts:
                 screen.blit(text[0], text[1])
             pygame.display.update()
-        # print(-1)
-        FAST_REACTION = 1 if FAST_REACTION == -1 else 0
-        COLLECT_ORDER = 1 if COLLECT_ORDER == -1 else 0
-        CHOOSE_RIGHT = 1 if CHOOSE_RIGHT == -1 else 0
+        if FAST_REACTION == -1:
+            FAST_REACTION = 1
+        if COLLECT_ORDER == -1:
+            COLLECT_ORDER = 1
+        if CHOOSE_RIGHT == -1:
+            CHOOSE_RIGHT = 1
         texts = []
 
     screen.blit(background, (0, 0))
-    # all_sprites.draw(screen)
 
     for text in texts:
         screen.blit(text[0], text[1])
@@ -439,6 +552,8 @@ while True:
         game_collect_order()
     elif FAST_REACTION == 1:
         game_fast_reaction()
+    elif CHOOSE_RIGHT == 1:
+        game_choose_right()
 
     pygame.display.update()
 
