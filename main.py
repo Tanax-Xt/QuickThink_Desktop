@@ -1,7 +1,7 @@
 import os.path
 import sys
 import time
-from random import shuffle, sample
+from random import shuffle, sample, randint
 
 import pygame
 
@@ -44,6 +44,87 @@ class Card(pygame.sprite.Sprite):
             screen.blit(self.im, self.coords if coords is None else coords)
 
 
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y):
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame].convert_alpha()
+        self.rect = self.rect.move(x, y)
+        self.mask = pygame.mask.from_surface(self.image)
+        self.speed = 13.5
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update(self, *args):
+        if len(args) == 0:
+            screen.blit(self.image, self.rect)
+            return
+
+        right, left = args
+
+        if self.rect.x > WIDTH:
+            self.rect.x = 0
+
+        if self.rect.x < 0:
+            self.rect.x = WIDTH
+
+        if right:
+            self.rect.x += self.speed
+        if left:
+            self.rect.x -= self.speed
+
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+        screen.blit(self.image, self.rect)
+        self.mask = pygame.mask.from_surface(self.image.convert_alpha())
+
+
+class Apple(pygame.sprite.Sprite):
+    image = pygame.image.load('assets/fast_reaction_cards/apple.png')
+
+    def __init__(self, coef):
+        super().__init__()
+        # self.x = coef * 220 + 100
+        # self.y = randint(90, 200)
+        self.direction = 1
+        self.image = Apple.image
+        self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect.x = coef * 350 + 150
+        self.rect.y = randint(101, 200)
+
+    def update(self, capibara):
+        if not pygame.sprite.collide_mask(self, capibara):
+            self.rect.y -= (-2) * self.direction
+            screen.blit(self.image, self.rect)
+            # print(capibara.rect, self.rect)
+            # print(self.rect)
+            if self.rect.y < 100:
+                self.direction *= -1.1
+                capibara.speed *= 1.02
+
+            if self.rect.y > 670:
+                global FAST_REACTION
+                FAST_REACTION = 2
+
+        else:
+            global counter_game1
+            counter_game1 += 1
+            self.rect.y -= 50
+            self.direction *= -1.1
+            capibara.speed *= 1.02
+            screen.blit(self.image, self.rect)
+
+
 def myFunction():
     print('Button Pressed')
 
@@ -56,7 +137,7 @@ def show_menu():
     background = pygame.image.load("assets/screens/menu_screen.png")
     buttons = []
     texts = []
-    Button(194, 352, 888, 77, font, buttons, screen, 'Fast reaction', myFunction)
+    Button(194, 352, 888, 77, font, buttons, screen, 'Fast reaction', show_fast_reaction)
     Button(194, 450, 888, 77, font, buttons, screen, 'Collect order', show_collect_order)
     Button(194, 548, 888, 77, font, buttons, screen, 'Choose right', myFunction)
     Button(194, 647, 888, 77, font, buttons, screen, 'Settings', show_settings)
@@ -89,6 +170,52 @@ def finish_screen(game, score):
     for j, i in enumerate(database.get_result(game)):
         results_i = ru_font.render(f'{j + 1}. {i[2]} – {i[1]} очков', True, '#ffffff')
         texts.append((results_i, (WIDTH / 2 - results_i.get_rect().width / 2, 320 + 70 * j)))
+
+
+def show_fast_reaction():
+    global background, buttons, texts, FAST_REACTION
+    background = pygame.image.load("assets/screens/fast_reaction.png")
+    background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+    buttons = []
+    texts = []
+    FAST_REACTION = -1
+    start_screen('Не дай упасть яблочкам! Управление стрелочками')
+
+
+def game_fast_reaction():
+    global texts, counter_game1
+    texts = []
+    Button(0, 0, 967, 91, font, buttons, screen, 'Menu', show_menu)
+    counter_game1 = 0
+    apples = pygame.sprite.Group()
+
+    for i in range(4):
+        apples.add(Apple(i))
+
+    im = pygame.image.load('assets/fast_reaction_cards/CapybaraAnimation.png')
+    capibara = AnimatedSprite(pygame.transform.scale(im, (1533, 165)), 8, 1, 500, 533)
+    while FAST_REACTION not in [0, 2]:
+        keys = pygame.key.get_pressed()
+        clock.tick(30)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: sys.exit()
+
+        screen.blit(background, (0, 0))
+
+        if keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]:
+            right, left = keys[pygame.K_RIGHT], keys[pygame.K_LEFT]
+            capibara.update(right, left)
+
+        capibara.update()
+        apples.update(capibara)
+
+        for object in buttons:
+            object.update()
+
+        pygame.display.update()
+
+    if FAST_REACTION == 2:
+        finish_screen('fast_reaction', counter_game1 * 5)
 
 
 def show_collect_order():
@@ -125,7 +252,6 @@ def game_collect_order():
             cards.sprites()[show].show = True
             show += 1
             if show > 0:
-                # pygame.display.update()
                 time.sleep(0.8)
         elif show == 6:
             screen.blit(background, (0, 0))
@@ -135,7 +261,6 @@ def game_collect_order():
             for i, j in enumerate(sample(range(6), 6)):
                 cards.sprites()[i].coords = (140 + 478.5 * (j % 3), 108 + 240 * (j // 3))
             cards.update()
-            # pygame.display.update()
         else:
             screen.blit(background, (0, 0))
             cards.update()
@@ -147,10 +272,6 @@ def game_collect_order():
 
     if COLLECT_ORDER == 2:
         finish_screen('collect_order', 60 - 10 * len(order))
-    # im = pygame.image.load("ball.png").convert()
-    # screen.blit(im, (500, 500))
-    # screen.blit(background, (0, 0))
-    # pygame.time.wait(3000)
 
 
 def check_collect_order(num):
@@ -163,7 +284,6 @@ def check_collect_order(num):
             COLLECT_ORDER = 2
     else:
         COLLECT_ORDER = 2
-
 
 
 def show_settings():
@@ -267,6 +387,8 @@ texts = []
 order = []
 cards = pygame.sprite.Group()
 
+counter_game1 = 0
+
 sound1 = pygame.mixer.Sound('assets/audio/sounds/MenuButtons.mp3')
 font = pygame.font.Font('assets/fonts/Kodchasan-SemiBold.ttf', 55)
 ru_font = pygame.font.Font('assets/fonts/ISOCPEUR.ttf', 55)
@@ -279,51 +401,11 @@ load_music()
 clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 
-# class Parca(pygame.sprite.Sprite):
-#     def __init__(self, x=WIDTH / 2, y=HEIGHT / 2):
-#         super().__init__()
-#
-#         self.image = pygame.image.load("ball.png").convert()
-#
-#         self.image.set_colorkey((0, 0, 0))
-#         self.rect = self.image.get_rect()
-#         self.rect.center = (x, y)
-#
-#     def update(self, *args):
-#         up, down, right, left = args
-#
-#         if self.rect.x > WIDTH:
-#             self.rect.x = 0
-#         if self.rect.x < 0:
-#             self.rect.x = WIDTH
-#         if self.rect.y > HEIGHT:
-#             self.rect.y = 0
-#         if self.rect.y < 0:
-#             self.rect.y = HEIGHT
-#
-#         if right:
-#             self.rect.x += 10
-#         if left:
-#             self.rect.x -= 10
-#         if up:
-#             self.rect.y -= 10
-#         if down:
-#             self.rect.y += 10
-#
-#
-# parca1 = Parca()
-# all_sprites.add(parca1)
-
 while True:
     keys = pygame.key.get_pressed()
     clock.tick(60)
     for event in pygame.event.get():
         if event.type == pygame.QUIT: sys.exit()
-
-    # if keys[pygame.K_UP] or keys[pygame.K_DOWN] or keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]:
-    #     up, down, right, left = keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_RIGHT], keys[pygame.K_LEFT]
-    #     all_sprites.update(up, down, right, left)
-    # print(FAST_REACTION, COLLECT_ORDER, CHOOSE_RIGHT)
 
     # Start screen
     if -1 in [FAST_REACTION, COLLECT_ORDER, CHOOSE_RIGHT]:
@@ -355,6 +437,8 @@ while True:
 
     if COLLECT_ORDER == 1:
         game_collect_order()
+    elif FAST_REACTION == 1:
+        game_fast_reaction()
 
     pygame.display.update()
 
