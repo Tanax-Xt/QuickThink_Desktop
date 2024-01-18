@@ -275,8 +275,8 @@ def game_fast_reaction():
 
         pygame.display.update()
 
-    if CHOOSE_RIGHT == 2:
-        finish_screen('choose_right', counter_game1 * 5)
+    if FAST_REACTION == 2:
+        finish_screen('fast_reaction', counter_game1 * 5)
 
 
 def show_collect_order():
