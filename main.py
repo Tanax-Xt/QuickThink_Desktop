@@ -26,6 +26,7 @@ COLLECT_ORDER = 0
 CHOOSE_RIGHT = 0
 
 
+# Загрузка изображения
 def load_image(path):
     if not os.path.isfile(path):
         print(f"Файл с изображением '{path}' не найден")
@@ -33,6 +34,8 @@ def load_image(path):
     image = pygame.image.load(path)
     return image
 
+
+# Загрузка шрифта
 def load_font(path, kegle):
     if not os.path.isfile(path):
         print(f"Файл со шрифтом '{path}' не найден")
@@ -41,6 +44,7 @@ def load_font(path, kegle):
     return font
 
 
+# Класс для карты из 2 игры
 class Card(pygame.sprite.Sprite):
     def __init__(self, num):
         super().__init__()
@@ -62,6 +66,7 @@ class Card(pygame.sprite.Sprite):
             screen.blit(self.im, self.coords if coords is None else coords)
 
 
+# Класс для анимированного спрайта
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, sheet, columns, rows, x, y):
         super().__init__(all_sprites)
@@ -106,6 +111,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image.convert_alpha())
 
 
+# Класс яблока для 1 и 3 игр
 class Apple(pygame.sprite.Sprite):
     image = load_image('assets/fast_reaction_cards/apple.png')
 
@@ -156,6 +162,7 @@ class Apple(pygame.sprite.Sprite):
             screen.blit(self.image, self.rect)
 
 
+# Класс мяча, 3 игра
 class Ball(pygame.sprite.Sprite):
     image = load_image('assets/choose_right/ball.png')
 
@@ -183,6 +190,7 @@ class Ball(pygame.sprite.Sprite):
         screen.blit(self.image, self.rect)
 
 
+# Показать меню
 def show_menu():
     global background, buttons, texts, FAST_REACTION, COLLECT_ORDER, CHOOSE_RIGHT
     FAST_REACTION = 0
@@ -198,6 +206,7 @@ def show_menu():
     Button(194, 647, 888, 77, font, buttons, screen, 'Settings', show_settings)
 
 
+# Показать стартовое окно
 def start_screen(text):
     black = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA, 32)
     black.fill((131, 205, 235, 150))
@@ -212,6 +221,7 @@ def start_screen(text):
     texts.append((instruction, coords_instruction))
 
 
+# Финальное окно
 def finish_screen(game, score):
     black = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA, 32)
     black.fill((131, 205, 235, 150))
@@ -233,6 +243,7 @@ def finish_screen(game, score):
         texts.append((results_i, coords_text))
 
 
+# отображение 1 игры
 def show_fast_reaction():
     global background, buttons, texts, FAST_REACTION
     background = load_image("assets/screens/fast_reaction_screen.png")
@@ -243,6 +254,7 @@ def show_fast_reaction():
     start_screen('Не дай упасть яблочкам! Управление стрелочками')
 
 
+# игровой процесс, игра 1
 def game_fast_reaction():
     global texts, counter_game1
     texts = []
@@ -279,6 +291,7 @@ def game_fast_reaction():
         finish_screen('fast_reaction', counter_game1 * 5)
 
 
+# отображение 2 игры
 def show_collect_order():
     global background, buttons, texts, COLLECT_ORDER
     background = load_image("assets/screens/collect_order_screen.png")
@@ -289,6 +302,7 @@ def show_collect_order():
     start_screen('Запомни 6 карточек и отметь их в правильном порядке')
 
 
+# игровой процесс, игра 2
 def game_collect_order():
     global texts, order, cards
     texts = []
@@ -335,6 +349,7 @@ def game_collect_order():
         finish_screen('collect_order', 60 - 10 * len(order))
 
 
+# отображение 3 игры
 def show_choose_right():
     global background, buttons, texts, CHOOSE_RIGHT
     background = load_image("assets/screens/choose_right_screen.png")
@@ -345,6 +360,7 @@ def show_choose_right():
     start_screen('Лови только яблочки! Управление стрелочками')
 
 
+# игровой процесс, игра 3
 def game_choose_right():
     global texts, counter_game2
     texts = []
@@ -387,6 +403,7 @@ def game_choose_right():
         finish_screen('choose_right', counter_game2 * 10)
 
 
+# игровой процесс (проверка нажатия), игра 3
 def check_collect_order(num):
     global COLLECT_ORDER, cards, order
     if num == order[0]:
@@ -399,6 +416,7 @@ def check_collect_order(num):
         COLLECT_ORDER = 2
 
 
+# настройки
 def show_settings():
     def turn_mode():
         with open('data/sounds.txt', 'r') as f:
@@ -468,6 +486,7 @@ def show_settings():
         Button(460, 428, 495, 90, font, buttons, screen, f'Turn {mode}', turn_mode, True)
 
 
+# проверка включения звуков
 def check_sounds_data():
     if not os.path.exists('data/sounds.txt'):
         with open('data/sounds.txt', 'w', encoding='utf-8') as f:
@@ -477,6 +496,7 @@ def check_sounds_data():
             f.write('1')
 
 
+# загрузка музыки
 def load_music():
     with open('data/sounds.txt', 'r') as f:
         mode = f.read()
@@ -515,6 +535,7 @@ load_music()
 clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 
+# основной игровой цикл
 while True:
     keys = pygame.key.get_pressed()
     clock.tick(60)
